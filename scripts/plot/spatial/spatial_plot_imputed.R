@@ -10,7 +10,7 @@ tissues <- list.dirs(output_dir, full.names = FALSE, recursive = FALSE)
 
 for (tissue in tissues) {
     if (tissue == "mBrain2") {
-        marker_genes <- c("Cd63","Bcl11b", "Tbr1", "Pde10a", "Sox10", "Mbp", "Tspan2", "Mef2c", "Neurod6", "Cux2", "Dlx1")
+        marker_genes <- c("Cd63")
     } else {
         next
     }

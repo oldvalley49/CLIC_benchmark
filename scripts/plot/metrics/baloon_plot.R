@@ -281,9 +281,9 @@ create_bar_plot <- function(data, title, output_path) {
 }
 
 
-# Main analysis pipeline ----------------------------------------------------
+# main analysis pipeline ----------------------------------------------------
 
-# Create base output directory if it doesn't exist
+# create base output directory if it doesn't exist
 dir.create("plots/benchmark", showWarnings = FALSE, recursive = TRUE)
 
 # Define dataset groups with file paths and names
