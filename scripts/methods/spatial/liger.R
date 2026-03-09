@@ -70,13 +70,3 @@ ggsave(file.path("plots/spatial", tissue, "umap",paste0(run.id, ".jpeg")))
 coembed <- liger.obj@H.norm
 dir.create(file.path("output/spatial", tissue, "coembed"))
 write.csv(coembed, file=file.path("output/spatial", tissue, "coembed", paste0(run.id, ".csv")), row.names = TRUE)
-
-
-# load atac peak by cell data
-# rawPeak(liger.obj, "atac") <- atac_counts
-# liger.obj <- normalizePeak(liger.obj)
-# liger.obj <- imputeKNN(liger.obj, reference = 'atac', queries = "rna")
-
-# convert to gene activity
-
-# save

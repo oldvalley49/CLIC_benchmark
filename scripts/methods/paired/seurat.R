@@ -9,7 +9,8 @@ library(BSgenome.Hsapiens.UCSC.hg38)
 library(BSgenome.Mmusculus.UCSC.mm10)
 library(EnsDb.Hsapiens.v86)
 library(EnsDb.Mmusculus.v79)
-library(CLIC)
+library(devtools)
+devtools::load_all('/dcs07/hongkai/data/tomo/CLIC')
 source("scripts/methods/utility.R")
 
 # parse input argument
@@ -20,6 +21,7 @@ total_num <- as.numeric(args[3])
 sub_num <- as.numeric(args[4])
 cor_method <- args[5]
 index <- as.numeric(args[6])
+activity_model <- args[7]
 data_dir <- paste0("data/processed_data/rna_atac/", tissue)
 # data_dir = directory for the RNA and ATAC data
 # var_num = number of variable features to choose from
@@ -28,15 +30,21 @@ data_dir <- paste0("data/processed_data/rna_atac/", tissue)
 # cor_method = method used to calculate conserved features; either bulk or pseudobulk
 # index = index indicating the different runs under the same condition
 
-# runSeurat_paired <- function(tissue, data_dir, var_num, total_num, sub_num, cor_method, index){
    
 # load data
 rna_counts <- load_rna(data_dir)
 atac_counts <- load_atac(data_dir)
-activity_counts <- load_activity(data_dir)
+if (activity_model == 'signac') {
+    print('using signac gene activity')
+    activity_counts = load_activity(data_dir)
+} else {
+    print('using maestro gene activity')
+    activity_counts = load_maestro(data_dir)
+}
 barcode_to_annotation <- load_annotations(data_dir)
 
-# subsample
+activity_counts <- activity_counts[intersect(rownames(activity_counts), 
+                                             rownames(rna_counts)), ]
 subsampled <- subsample(rna_counts, atac_counts, activity_counts, barcode_to_annotation, sub_num)
 rna_counts <- subsampled$rna_counts
 atac_counts <- subsampled$atac_counts
@@ -77,9 +85,9 @@ atac$ct_truth <- factor(barcode_to_annotation$ct_truth)
 # standard preprocessing workflow for RNA
 rna <- NormalizeData(rna)
 if (startsWith(tissue, "m")) {
-    out <- FindCLICFeatures(rna, initial_variable_features_num = var_num, nfeatures = total_num, species='mouse')
+    out <- FindCLICFeatures(rna, score_name = paste0('mouse-', cor_method), initial_variable_features_num = var_num, nfeatures = total_num)
 } else {
-    out <- FindCLICFeatures(rna, initial_variable_features_num = var_num, nfeatures = total_num, species='human')
+    out <- FindCLICFeatures(rna, score_name = paste0('human-', cor_method), initial_variable_features_num = var_num, nfeatures = total_num)
 } 
 
 use.features <- out$use_features
@@ -95,13 +103,8 @@ DefaultAssay(atac) <- "ACTIVITY"
 atac <- NormalizeData(atac)
 atac <- ScaleData(atac, features = rownames(atac))
 
-# filter the features
-# variable.features <- VariableFeatures(rna)
-# result <- feature_selection(variable.features, tissue, cor_method, var_num, total_num)
-# use.features <- result$use.features
-# cor.num <- result$cor.num
 # generate run ID
-run.id <-  paste("seurat", cor_method, var_num, cor.num, length(Cells(rna)), index, sep="_")
+run.id <-  paste("seurat", cor_method, var_num, cor.num, length(Cells(rna)), activity_model, index, sep="_")
 print(run.id)
 # identify anchors for cca
 transfer.anchors <- FindTransferAnchors(reference=rna, query=atac, 
@@ -144,9 +147,6 @@ refdata <- GetAssayData(rna, assay = "RNA", slot = "data")
 imputation <- TransferData(anchorset = transfer.anchors, refdata = refdata, weight.reduction = atac[["lsi"]],
                             dims = 2:30)
 
-# dir.create(file.path("output/paired/rna_atac", tissue, "geximpute"))
-# gex.imputation.fp <- file.path("output/paired/rna_atac", tissue, "geximpute", paste0(run.id, ".RDS"))
-# saveRDS(imputation@data, file=gex.imputation.fp)
 
 atac[["RNA"]] <- imputation
 coembed <- merge(x = rna, y = atac, add.cell.ids = c("RNA", "ATAC"))

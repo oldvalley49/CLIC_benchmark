@@ -24,10 +24,10 @@ else:
     result = pd.DataFrame(columns=["algorithm", "filter_method", "var_num", "cor_num", "cell_num", "index", "foscttm", "ari", "asw", "accuracy", "asw-batch", "knn_auc"])
 for method in methods:
     print(method)
-    if method in result.index:
-        continue
-    if os.path.exists(os.path.join(output_dir, tissue, "ct_annotation", method))==False:
-        continue
+    # if method in result.index: # 12/2 commented to recompute values
+    #     continue
+    # if os.path.exists(os.path.join(output_dir, tissue, "ct_annotation", method))==False:
+    #     continue
     # parse string
     temp = {}
     parse_result = re.split(r'[_\.]', method)
@@ -36,7 +36,8 @@ for method in methods:
     temp["var_num"] = parse_result[2]
     temp["cor_num"] = parse_result[3]
     temp["cell_num"] = parse_result[4]
-    temp["index"] = parse_result[5]
+    temp['activity_model'] = parse_result[5]
+    temp["index"] = parse_result[6]
     rna, atac = load_coembed(os.path.join(output_dir,tissue, "coembed", method))
     coordinates_combined = pd.concat([rna, atac])
     annotation = pd.read_csv(os.path.join(output_dir, tissue, "ct_annotation", method), index_col=0)

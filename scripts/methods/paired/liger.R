@@ -6,7 +6,8 @@ library(class)
 library(Matrix)
 library(cowplot)
 library(FNN)
-library(CLIC)
+library(devtools)
+devtools::load_all('/dcs07/hongkai/data/tomo/CLIC')
 source("scripts/methods/utility.R")
 
 # parse input argument
@@ -17,15 +18,22 @@ total_num <- as.numeric(args[3])
 sub_num <- as.numeric(args[4])
 cor_method <- args[5]
 index <- as.numeric(args[6])
+activity_model <- args[7]
 data_dir <- paste0("data/processed_data/rna_atac/", tissue)
 dir.create(file.path("output/paired/rna_atac", tissue), showWarnings=FALSE)
 dir.create(file.path("plots/paired/rna_atac", tissue), showWarnings=FALSE)
 # load data
 rna_counts <- load_rna(data_dir)
 atac_counts <- load_atac(data_dir)
-activity_counts <- load_activity(data_dir)
+if (activity_model == 'signac') {
+    activity_counts = load_activity(data_dir)
+} else {
+    activity_counts = load_maestro(data_dir)
+}
 barcode_to_annotation <- load_annotations(data_dir)
 
+activity_counts <- activity_counts[intersect(rownames(activity_counts), 
+                                             rownames(rna_counts)), ]
 # subsample
 subsampled <- subsample(rna_counts, atac_counts, activity_counts, barcode_to_annotation, sub_num)
 rna_counts <- subsampled$rna_counts
@@ -39,17 +47,17 @@ rna <- CreateSeuratObject(rna_counts, assay="RNA")
 rna <- NormalizeData(rna)
 
 if (startsWith(tissue, "m")) {
-    out <- FindCLICFeatures(rna, initial_variable_features_num = var_num, nfeatures = total_num, species='mouse')
+    out <- FindCLICFeatures(rna, score_name = paste0('mouse-', cor_method), initial_variable_features_num = var_num, nfeatures = total_num)
 } else {
-    out <- FindCLICFeatures(rna, initial_variable_features_num = var_num, nfeatures = total_num, species='human')
+    out <- FindCLICFeatures(rna, score_name = paste0('human-', cor_method), initial_variable_features_num = var_num, nfeatures = total_num)
 } 
 
 use.features <- out$use_features
 cor.num <- out$clic_num
 
 # generate run id
-run.id <-  paste("liger", cor_method, var_num, cor.num, length(Cells(rna)), index, sep="_")
-run.id
+run.id <-  paste("liger", cor_method, var_num, cor.num, length(Cells(rna)), activity_model, index, sep="_")
+print(run.id)
 
 # filter according to the genes
 
@@ -106,20 +114,3 @@ ggsave(file.path("plots/paired/rna_atac", tissue, "annotation_accuracy", paste0(
 cell_annotation_results <- data.frame(barcodes=rownames(atac_embed), predicted.id = ct.predictions, ct_truth=train_annotations$ct_truth)
 dir.create(file.path("output/paired/rna_atac", tissue, "ct_annotation"), showWarnings=FALSE)
 write.csv(cell_annotation_results, file.path("output/paired/rna_atac", tissue, "ct_annotation", paste0(run.id, ".csv")))
-
-# make a liger object again with the full counts dataset and normalize them to obtain norm data cuz we need the entire genes being 
-# no actually don't do this cuz this will fuck up normalization, or will it.. if the closeness of two cells should still be the same?
-# gex_norm <- normData(liger.obj, "rna")
-# gex_norm <- t(gex_norm)
-# gex_impute <- sapply(1:ncol(gex_norm), function(i) {
-#     knn.reg(train = rna_embed, test = atac_embed, y = gex_norm[, i], k = 30)$pred
-# })
-# gex_impute <- as(gex_impute, "dgCMatrix")
-# gex_impute <- t(gex_impute)
-# gex_norm <- t(gex_norm)
-# gex_norm <- gex_norm * 10000
-# gex_norm <- log1p(gex_norm)
-# # generate and save in silico multiome profile
-# dir.create(file.path("output/paired/rna_atac", tissue, "imputed_gex"), showWarnings = FALSE)
-# out_dir <- file.path("output/paired/rna_atac", tissue, "imputed_gex")
-# writeMM(gex_norm, file = file.path(out_dir,paste0(run.id, ".mtx")))

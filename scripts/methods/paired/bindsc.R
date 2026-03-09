@@ -12,7 +12,8 @@ library(cowplot)
 library(GenomeInfoDb)
 library(cluster)
 library(glue)
-library(CLIC)
+library(devtools)
+devtools::load_all('/dcs07/hongkai/data/tomo/CLIC')
 source("scripts/methods/utility.R")
 
 # parse input argument
@@ -23,16 +24,24 @@ total_num <- as.numeric(args[3])
 sub_num <- as.numeric(args[4])
 cor_method <- args[5]
 index <- as.numeric(args[6])
+activity_model <- args[7]
 data_dir <- paste0("data/processed_data/rna_atac/", tissue)
 
 
 # load data
 rna_counts <- load_rna(data_dir)
 atac_counts <- load_atac(data_dir)
-activity_counts <- load_activity(data_dir)
+if (activity_model == 'signac') {
+    activity_counts = load_activity(data_dir)
+} else {
+    activity_counts = load_maestro(data_dir)
+}
 barcode_to_annotation <- load_annotations(data_dir)
 
 # subsample
+activity_counts <- activity_counts[intersect(rownames(activity_counts), 
+                                             rownames(rna_counts)), ]
+                                             
 subsampled <- subsample(rna_counts, atac_counts, activity_counts, barcode_to_annotation, sub_num)
 rna_counts <- subsampled$rna_counts
 atac_counts <- subsampled$atac_counts
@@ -74,17 +83,17 @@ atac <- FindClusters(atac, resolution = 0.5)
 
 # filter genes
 if (startsWith(tissue, "m")) {
-    out <- FindCLICFeatures(rna, initial_variable_features_num = var_num, nfeatures = total_num, species='mouse')
+    out <- FindCLICFeatures(rna, score_name = paste0('mouse-', cor_method), initial_variable_features_num = var_num, nfeatures = total_num)
 } else {
-    out <- FindCLICFeatures(rna, initial_variable_features_num = var_num, nfeatures = total_num, species='human')
+    out <- FindCLICFeatures(rna, score_name = paste0('human-', cor_method), initial_variable_features_num = var_num, nfeatures = total_num)
 } 
 
 use.features <- out$use_features
 cor.num <- out$clic_num
 
 # generate run id
-run.id <-  paste("bindsc", cor_method, var_num, cor.num, length(Cells(rna)), index, sep="_")
-run.id
+run.id <-  paste("bindsc", cor_method, var_num, cor.num, length(Cells(rna)), activity_model, index, sep="_")
+print(run.id)
 
 # we won't be able to use genes that don't have fragments in the promoter region and genomic region
 use.features = intersect(rownames(activity_counts), use.features)
@@ -170,13 +179,3 @@ ggsave(file.path("plots/paired/rna_atac", tissue,"annotation_accuracy", paste0(r
 cell_annotation_results <- data.frame(barcodes=rownames(atac_embed), predicted.id = ct.predictions, ct_truth=train_annotations$ct_truth)
 dir.create(file.path("output/paired/rna_atac", tissue, "ct_annotation"), showWarnings=FALSE)
 write.csv(cell_annotation_results,file.path("output/paired/rna_atac", tissue, "ct_annotation", paste0(run.id, ".csv")))
-
-# in silico multiome profile
-# Z_impu <- impuZ(X=rna[["RNA"]]$data, bicca = res)
-# colnames(Z_impu) <- colnames(Z0)
-# Z_impu <- as(Z_impu, "CsparseMatrix")
-
-# # generate and save in silico multiome profile
-# dir.create(file.path("/fastscratch/myscratch/tfurutan/cross_modality/imputed_gex", tissue), showWarnings = FALSE)
-# out_dir <- file.path("/fastscratch/myscratch/tfurutan/cross_modality/imputed_gex", tissue)
-# writeMM(Z_impu, file = file.path(out_dir,paste0(run.id, ".mtx")))

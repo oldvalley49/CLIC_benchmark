@@ -20,7 +20,7 @@ from sklearn.metrics import confusion_matrix
 from utility import *
 scglue.plot.set_publication_params()
 
-# Capture command-line arguments
+# capture command-line arguments
 args = sys.argv[1:]
 tissue = args[0]
 var_num = int(args[1])

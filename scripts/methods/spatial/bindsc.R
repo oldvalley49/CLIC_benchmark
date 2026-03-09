@@ -131,30 +131,3 @@ dir.create(file.path("output/spatial", tissue), showWarnings=FALSE)
 dir.create(file.path("output/spatial", tissue, "coembed"), showWarnings=FALSE)
 write.csv(coembed, file=file.path("output/spatial", tissue, "coembed", paste0(run.id, ".csv")), row.names = TRUE)
 
-# # transfer annotation with KNN classifier(k=30)
-# cell_num <- ncol(rna)
-# rna_embed <- coembed[1:cell_num, ]
-# atac_embed <- coembed[(cell_num+1):nrow(coembed), ]
-# train_barcodes <- rownames(rna_embed)
-# train_annotations <- barcode_to_annotation
-# train_annotations$barcodes <- paste0("RNA_", train_annotations$barcodes)
-# all(train_annotations$barcodes == train_barcodes)
-# ct.predictions <- knn(train = rna_embed, test = atac_embed, cl = train_annotations$ct_truth, k = 30)
-# # annotation accuracy table
-# predictions <- table(train_annotations$ct_truth, ct.predictions)
-# predictions <- predictions/rowSums(predictions)  
-# predictions <- as.data.frame(predictions)
-
-# p1 <- ggplot(predictions, aes(Var1, ct.predictions, fill = Freq)) + 
-#     geom_tile() + scale_fill_gradient(name = "Fraction of cells",
-#                                     low = "#ffffc8", high = "#7d0025") + xlab("Cell type annotation (RNA)") +
-#     ylab("Predicted cell type label (ATAC)") +
-#     theme_cowplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-#     ggtitle(paste("Variable=", var_num, "Method=", cor_method, "Cell Num=", length(Cells(rna))))
-
-# dir.create(file.path("plots/spatial", tissue,"annotation_accuracy"), showWarning=FALSE)
-# ggsave(file.path("plots/spatial", tissue,"annotation_accuracy", paste0(run.id, ".jpeg")))
-# # save annotation result
-# cell_annotation_results <- data.frame(barcodes=rownames(atac_embed), predicted.id = ct.predictions, ct_truth=train_annotations$ct_truth)
-# dir.create(file.path("output/spatial", tissue, "ct_annotation"), showWarning=FALSE)
-# write.csv(cell_annotation_results, file.path("output/spatial", tissue, "ct_annotation", paste0(run.id, ".csv")))

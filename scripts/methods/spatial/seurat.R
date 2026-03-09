@@ -107,25 +107,3 @@ ggsave(file.path("plots/spatial", tissue, "umap",paste0(run.id, ".jpeg")))
 dir.create(file.path("output/spatial", tissue, "coembed"), showWarnings = FALSE)
 write.csv(Embeddings(coembed, reduction = "pca"), 
             file = file.path("output/spatial", tissue, "coembed", paste0(run.id, ".csv")), row.names = TRUE)
-
-# impute ATAC profile
-
-# transfer.anchors <- FindTransferAnchors(reference=atac, query=rna, 
-#                                         features=use.features,
-#                                         reference.assay = "ACTIVITY",
-#                                         query.assay = "RNA",
-#                                         reduction = "cca")
-
-# refdata <- GetAssayData(atac, assay = "ATAC", slot = "data")
-
-# atac_imputed <- TransferData(anchorset = transfer.anchors, refdata = refdata, weight.reduction = rna[["pca"]],
-#                             dims = 1:30)
-# # check if atac_imputed has rownames and column names
-# if (startsWith(tissue, "m")){
-#     gtf.fp <- "data/raw_data/gtf/mm10_2020-A.gtf"
-# } else {
-#     gtf.fp <- "data/raw_data/gtf/GRCh38_2020-A.gtf"
-# }
-# gene_level <- CreateGeneActivityMatrix(atac_imputed, annotation.file=gtf.fp)
-
-# save as matrix file

@@ -22,7 +22,7 @@ from sklearn.metrics import confusion_matrix
 from utility import *
 scglue.plot.set_publication_params()
 
-# Capture command-line arguments
+# command-line arguments
 args = sys.argv[1:]
 tissue = args[0]
 var_num = int(args[1])
@@ -30,6 +30,7 @@ total_num = int(args[2])
 sub_num = float(args[3])
 cor_method = args[4]
 index = int(args[5])
+activity_model = args[6]
 
 data_dir = "data/processed_data/rna_atac/"+tissue
 rna = load_rna(tissue)
@@ -57,8 +58,22 @@ ct_annotation.set_index('barcodes', inplace=True)
 # atac = atac[subsample_cells].copy()
 # ct_annotation = ct_annotation.loc[subsample_cells]
 rna,atac,ct_annotation,subsample_size = subsample(rna, atac, ct_annotation, tissue, sub_num)
+# exit if there are more more var_num than the number of features
+if var_num > rna.n_vars:
+    raise ValueError("there are more requested intial_var_features than there are features in the original dataset. ")
 # RNA preprocessing
 sc.pp.highly_variable_genes(rna, n_top_genes=var_num, flavor="seurat_v3")
+
+var_genes = rna.var['variances_norm'].sort_values(ascending=False).index[0:var_num]
+subset_genes,cor_num = feature_selection(var_genes, tissue, cor_method, var_num, total_num)
+
+# generate run_id
+rna.var['highly_variable'] = rna.var.index.isin(subset_genes)
+test = rna.var[rna.var['highly_variable'] == True]
+print(test)
+run_id = "_".join(["glue", cor_method, str(var_num), str(cor_num), str(subsample_size), activity_model, str(index)])
+print(run_id)
+
 sc.pp.normalize_total(rna)
 sc.pp.log1p(rna)
 norm_data = rna.X.copy()
@@ -79,15 +94,6 @@ atac.var["chrom"] = split.map(lambda x: x[0])
 atac.var["chromStart"] = split.map(lambda x: x[1]).astype(int)
 atac.var["chromEnd"] = split.map(lambda x: x[2]).astype(int)
 
-var_genes = rna.var['variances_norm'].sort_values(ascending=False).index[0:var_num]
-subset_genes,cor_num = feature_selection(var_genes, tissue, cor_method, var_num, total_num)
-
-# generate run_id
-rna.var['highly_variable'] = rna.var.index.isin(subset_genes)
-test = rna.var[rna.var['highly_variable'] == True]
-print(test)
-run_id = "_".join(["glue", cor_method, str(var_num), str(cor_num), str(subsample_size), str(index)])
-print(run_id)
 
 guidance = scglue.genomics.rna_anchored_guidance_graph(rna, atac)
 scglue.graph.check_graph(guidance, [rna, atac])

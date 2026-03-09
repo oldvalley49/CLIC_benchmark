@@ -45,6 +45,20 @@ load_activity <- function(data_dir){
    return(activity_counts)
 }
 
+load_maestro <- function(data_dir){
+   # read gene activity score 
+   activity_counts_fp <- file.path(data_dir, "maestro_counts.mtx")
+   activity_counts <- readMM(activity_counts_fp)
+   # add cell barcode and gene name to activity counts
+   activity_genes <- read.csv(file.path(data_dir, "maestro_genes.csv"))
+   activity_genes <- activity_genes$x
+   barcodes <- read.csv(file.path(data_dir, "barcode.csv"))
+   barcodes <- barcodes$x
+   rownames(activity_counts) <- activity_genes
+   colnames(activity_counts) <- barcodes
+   return(activity_counts)
+}
+
 load_annotations <- function(data_dir){
    # data frame containing correspondance from cell barcode to cell type
    ct_truth <- read.csv(file.path(data_dir, "ct_annotation.csv"))

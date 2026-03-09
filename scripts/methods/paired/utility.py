@@ -83,18 +83,19 @@ def load_atac(tissue):
     atac.obs["domain"] = "scATAC-seq"
     return atac
 
-def load_activity(tissue):
-    metadata = pd.read_csv("data/raw_data/rna_atac/metadata.csv", index_col=0)
-    filepath = metadata.loc[tissue, "data_path"]
-    activity_counts = mmread(os.path.join(filepath, "activity_counts.mtx"))
-    activity_counts = activity_counts.transpose().tocsr()
-    activity = ad.AnnData(activity_counts)
-    #cell names
-    barcodes = pd.read_csv(os.path.join(filepath, "barcode.csv"))
-    atac.obs_names = barcodes["x"]
-    #gene names
-    genes = pd.read_csv(os.path.join(filepath, "genes.csv"))
-    rna.var_names = genes["x"]
+# def load_activity(tissue):
+#     metadata = pd.read_csv("data/raw_data/rna_atac/metadata.csv", index_col=0)
+#     filepath = metadata.loc[tissue, "data_path"]
+#     activity_counts = mmread(os.path.join(filepath, "activity_counts.mtx"))
+#     activity_counts = activity_counts.transpose().tocsr()
+#     activity = ad.AnnData(activity_counts)
+#     #cell names
+#     barcodes = pd.read_csv(os.path.join(filepath, "barcode.csv"))
+#     atac.obs_names = barcodes["x"]
+#     #gene names
+#     genes = pd.read_csv(os.path.join(filepath, "genes.csv"))
+#     rna.var_names = genes["x"]
+
 
 def subsample(rna, atac, ct_annotation, tissue, sub_num):
     #subsample the population

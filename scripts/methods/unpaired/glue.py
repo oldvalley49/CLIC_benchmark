@@ -21,7 +21,7 @@ from sklearn.metrics import confusion_matrix
 from utility import *
 scglue.plot.set_publication_params()
 
-# Capture command-line arguments
+# command-line arguments
 
 args = sys.argv[1:]
 rna_batch = args[0]

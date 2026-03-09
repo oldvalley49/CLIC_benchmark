@@ -55,42 +55,15 @@ def foscttm(x, y):
     return 1-np.mean(fracs).round(4)
 # measures cell type annotation accuracy
 def ari(x, y):
-    """
-    x: true labels
-    y: predicted labels
-    """
     return sklearn.metrics.adjusted_rand_score(x, y)
 
 # raw accuracy percentage
 def accuracy(x, y):
-    """
-    x: true labels
-    y: predicted labels
-    """
     return sklearn.metrics.accuracy_score(x, y)
 def mean_average_precision(
         x: np.ndarray, y: np.ndarray, neighbor_frac: float = 0.01, **kwargs
 ) -> float:
-    r"""
-    Mean average precision
 
-    Parameters
-    ----------
-    x
-        Coordinates
-    y
-        Cell type labels
-    neighbor_frac
-        Nearest neighbor fraction
-    **kwargs
-        Additional keyword arguments are passed to
-        :class:`sklearn.neighbors.NearestNeighbors`
-
-    Returns
-    -------
-    map
-        Mean average precision
-    """
     k = max(round(y.shape[0] * neighbor_frac), 1)
     nn = sklearn.neighbors.NearestNeighbors(
         n_neighbors=min(y.shape[0], k + 1), **kwargs
@@ -109,29 +82,7 @@ def _average_precision(match: np.ndarray) -> float:
 
 
 def normalized_mutual_info(x: np.ndarray, y: np.ndarray, **kwargs) -> float:
-    r"""
-    Normalized mutual information with true clustering
 
-    Parameters
-    ----------
-    x
-        Coordinates
-    y
-        Cell type labels
-    **kwargs
-        Additional keyword arguments are passed to
-        :func:`sklearn.metrics.normalized_mutual_info_score`
-
-    Returns
-    -------
-    nmi
-        Normalized mutual information
-
-    Note
-    ----
-    Follows the definition in `OpenProblems NeurIPS 2021 competition
-    <https://openproblems.bio/neurips_docs/about_tasks/task3_joint_embedding/>`__
-    """
     x = AnnData(X=x, dtype=x.dtype)
     sc.pp.neighbors(x, n_pcs=0, use_rep="X")
     nmi_list = []
@@ -146,29 +97,6 @@ def normalized_mutual_info(x: np.ndarray, y: np.ndarray, **kwargs) -> float:
 
 
 def asw(x: np.ndarray, y: np.ndarray, **kwargs) -> float:
-    r"""
-    Cell type average silhouette width
-
-    Parameters
-    ----------
-    x
-        Coordinates
-    y
-        Cell type labels
-    **kwargs
-        Additional keyword arguments are passed to
-        :func:`sklearn.metrics.silhouette_score`
-
-    Returns
-    -------
-    asw
-        Cell type average silhouette width
-
-    Note
-    ----
-    Follows the definition in `OpenProblems NeurIPS 2021 competition
-    <https://openproblems.bio/neurips_docs/about_tasks/task3_joint_embedding/>`__
-    """
     return (sklearn.metrics.silhouette_score(x, y, **kwargs).item() + 1) / 2
 
 
@@ -176,24 +104,6 @@ def asw(x: np.ndarray, y: np.ndarray, **kwargs) -> float:
 def graph_connectivity(
         x: np.ndarray, y: np.ndarray, **kwargs
 ) -> float:
-    r"""
-    Graph connectivity
-
-    Parameters
-    ----------
-    x
-        Coordinates
-    y
-        Cell type labels
-    **kwargs
-        Additional keyword arguments are passed to
-        :func:`scanpy.pp.neighbors`
-
-    Returns
-    -------
-    conn
-        Graph connectivity
-    """
     x = AnnData(X=x, dtype=x.dtype)
     sc.pp.neighbors(x, n_pcs=0, use_rep="X", **kwargs)
     conns = []
@@ -210,31 +120,6 @@ def graph_connectivity(
 def asw_batch(
         x: np.ndarray, y: np.ndarray, ct: np.ndarray, **kwargs
 ) -> float:
-    r"""
-    Batch average silhouette width
-
-    Parameters
-    ----------
-    x
-        Coordinates
-    y
-        Batch labels
-    ct
-        Cell type labels
-    **kwargs
-        Additional keyword arguments are passed to
-        :func:`sklearn.metrics.silhouette_samples`
-
-    Returns
-    -------
-    asw_batch
-        Batch average silhouette width
-
-    Note
-    ----
-    Follows the definition in `OpenProblems NeurIPS 2021 competition
-    <https://openproblems.bio/neurips_docs/about_tasks/task3_joint_embedding/>`__
-    """
     s_per_ct = []
     for t in np.unique(ct):
         mask = ct == t
@@ -247,24 +132,7 @@ def asw_batch(
     return np.mean(s_per_ct).item()
 
 def knn_auc(F: np.ndarray, G: np.ndarray, k_percent: float = 0.01) -> float:
-    """
-    Computes the kNN-AUC score, measuring the average percentage overlap between
-    the neighborhoods of scRNA-seq measurements (F) and scATAC-seq measurements (G).
-    
-    Parameters
-    ----------
-    F : np.ndarray
-        scRNA-seq measurements (cells × features)
-    G : np.ndarray
-        scATAC-seq measurements (cells × features)
-    k : int, optional
-        Number of neighbors to consider as percentage fo the entire population, default is 1%.
-    
-    Returns
-    -------
-    float
-        The kNN-AUC score (higher is better).
-    """
+
     assert F.shape[0] == G.shape[0], "F and G must have the same number of cells"
     n_cells = F.shape[0]
     n_neighbors  = int(n_cells*k_percent)

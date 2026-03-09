@@ -3,8 +3,8 @@
 #SBATCH --job-name=glue_integration
 #SBATCH --output=logs/glue_%A_%a.out
 #SBATCH --error=logs/glue_%A_%a.err
-#SBATCH --array=1-42
-#SBATCH --time=5:00:00
+#SBATCH --array=10-336
+#SBATCH --time=4:00:00
 #SBATCH --mem=70G
 #SBATCH --partition=gpu
 #SBATCH --gpus=1
@@ -18,7 +18,7 @@ conda activate scglue
 PARAMS=$(sed -n "${SLURM_ARRAY_TASK_ID}p" scripts/benchmark/parameters/parameters_paired.txt)
 
 # Parse parameters
-read DATASET VAR_NUM TOTAL_NUM SUB_NUM COR_METHOD INDEX <<< "$PARAMS"
+read DATASET VAR_NUM TOTAL_NUM SUB_NUM COR_METHOD INDEX ACTIVITY_MODEL <<< "$PARAMS"
 
 echo "Running Integration..."
 echo "Parameters:"
@@ -33,5 +33,5 @@ OUTDIR="output/paired/rna_atac/${DATASET}/coembed"
 
 # Run GLUE only if output doesn't already exist
 echo "Running GLUE..."
-python scripts/methods/paired/glue.py $DATASET $VAR_NUM $TOTAL_NUM $SUB_NUM $COR_METHOD $INDEX
+python scripts/methods/paired/glue.py $DATASET $VAR_NUM $TOTAL_NUM $SUB_NUM $COR_METHOD $INDEX $ACTIVITY_MODEL
 

@@ -6,7 +6,7 @@ import seaborn as sns
 from matplotlib.colors import TwoSlopeNorm
 import numpy as np
 
-tissues = [i for i in os.listdir('output/paired/rna_atac') if not i.startswith('.') and i != 'mRetina']
+tissues = [i for i in os.listdir('output/paired/rna_atac') if not i.startswith('.')]
 results_dict = {}
 for tissue in tissues:
     results = pd.read_csv(os.path.join("output/paired/rna_atac", tissue, "results.csv"), index_col=0)
@@ -14,14 +14,14 @@ for tissue in tissues:
     results.index = tissue + "_" + results.index
     results_dict[tissue] = results
 results = pd.concat(results_dict.values())
-results
+results = results[(results['filter_method'] == 'signac-pearson') & (results['activity_model'] == 'signac')].copy()
 
 ### Plotting the average default setting Alignment across datasets
 
 ### Averaging across all subsampled versions as well
 default_results = results[results["var_num"]==2000]
 default_results = default_results.drop(columns=["filter_method", "var_num", "cor_num", "cell_num", "index"])
-default_results = default_results.groupby(["algorithm", "tissue"], as_index=False).mean()
+default_results = default_results.groupby(["algorithm", "tissue", "activity_model"], as_index=False).mean()
 default_results["tissue"] = pd.Categorical(default_results["tissue"], categories = tissues, ordered=True)
 default_results
 
@@ -43,7 +43,7 @@ plt.show()
 ### Plotting percent improvement of FOSCTTM  across tissues and conditions
 # Filter and process default results
 default_results = results[results["var_num"] == 2000].drop(columns=["filter_method", "index"])
-default_results = default_results.groupby(["algorithm", "tissue", "var_num", "cor_num", "cell_num"], as_index=False).mean()
+default_results = default_results.groupby(["algorithm", "tissue", "var_num", "cor_num", "cell_num", "activity_model"], as_index=False).mean()
 default_results["tissue"] = pd.Categorical(default_results["tissue"], categories=tissues, ordered=True)
 # Filter and process filtered results
 filtered_results = results[results["var_num"] != 2000].copy()
@@ -63,10 +63,10 @@ for metric in metrics:
     merged[metric+"_percent"] = (merged[metric] - merged[metric+'_default'])/merged[metric+'_default'].replace(0, np.nan)
 merged
 
-
+all_var_nums = sorted(results['var_num'].unique())
 plt.figure(figsize=(20, 10))
-sns.boxplot(data=merged, x='tissue', y='asw_percent', hue="var_num")
-plt.title('Relative Improvement - ASW')
+sns.boxplot(data=merged, x='tissue', y='foscttm_percent', hue="var_num", hue_order=all_var_nums, legend='full')
+plt.title('Relative Improvement - FOSCTTM')
 
 # Add a red dotted line at y=0
 plt.axhline(y=0, color='red', linestyle='--', linewidth=1.5)
@@ -74,6 +74,6 @@ plt.axhline(y=0.1, color='red', linestyle='--', linewidth=1.5)
 # plt.axhline(y=0.2, color='red', linestyle='--', linewidth=1.5)
 
 plt.tight_layout()
-plt.savefig("plots/benchmark/ASW_parameter_robustness.svg", format="svg", dpi=300)
-plt.savefig("plots/benchmark/ASW_parameter_robustness.jpeg", format="jpeg", dpi=300)
+plt.savefig("plots/benchmark/foscttm_parameter_robustness.svg", format="svg", dpi=300)
+plt.savefig("plots/benchmark/foscttm_parameter_robustness.jpeg", format="jpeg", dpi=300)
 
